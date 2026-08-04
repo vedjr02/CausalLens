@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: causallens-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.13
+      # Set in the Render dashboard — never committed.
+      - key: DATABASE_URL
+        sync: false
+      # Must include the deployed Vercel origin once the frontend is live.
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ENVIRONMENT
+        value: production
