@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * CausalLens palette — a serious analysis tool, not a SaaS landing page.
+ * Warm paper, near-black ink, one restrained pine accent, and three
+ * semantic signal colours reserved exclusively for verdicts.
+ * No gradients, no glass, no decorative colour.
+ */
+:root {
+  --paper: #faf9f7;
+  --surface: #ffffff;
+  --ink: #16181d;
+  --ink-muted: #5c6169;
+  --ink-faint: #8a8f98;
+  --rule: #e5e2dd;
+  --rule-strong: #d3cfc8;
+
+  --accent: #1f4e46;
+  --accent-soft: #eef3f1;
+
+  /* Verdict semantics — never used decoratively. */
+  --signal-positive: #1f6f4a;
+  --signal-positive-soft: #edf5f0;
+  --signal-caution: #8a6314;
+  --signal-caution-soft: #f8f2e6;
+  --signal-negative: #9c3a2b;
+  --signal-negative-soft: #f8efed;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Tabular figures everywhere numbers are compared — statistics read wrong
+   when digits jitter between rows. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
