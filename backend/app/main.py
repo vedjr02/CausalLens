@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from app.config import get_settings
 from app.db import dispose_engine, get_engine
+from app.routers import experiment
 
 
 @asynccontextmanager
@@ -32,6 +33,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(experiment.router)
 
 
 @app.get("/")

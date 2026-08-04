@@ -27,17 +27,42 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   if (!response.ok) {
-    let detail = `Request failed (${response.status})`;
-    try {
-      const body = await response.json();
-      if (typeof body?.detail === "string") detail = body.detail;
-    } catch {
-      // Non-JSON error body — keep the status-based message.
-    }
-    throw new ApiError(detail, response.status);
+    throw new ApiError(await readErrorDetail(response), response.status);
   }
 
   return response.json() as Promise<T>;
+}
+
+/**
+ * FastAPI reports errors two ways: a plain string `detail` from an explicit
+ * HTTPException, or an array of field errors from request validation. Both
+ * need to reach the user as a readable sentence.
+ */
+async function readErrorDetail(response: Response): Promise<string> {
+  try {
+    const body = await response.json();
+    const detail = body?.detail;
+
+    if (typeof detail === "string") return detail;
+
+    if (Array.isArray(detail)) {
+      const messages = detail
+        .map((item) => {
+          const message = String(item?.msg ?? "").replace(/^Value error,\s*/, "");
+          const field = Array.isArray(item?.loc)
+            ? item.loc.filter((p: unknown) => p !== "body").join(".")
+            : "";
+          return field && !message.toLowerCase().includes(field.toLowerCase())
+            ? `${field}: ${message}`
+            : message;
+        })
+        .filter(Boolean);
+      if (messages.length) return messages.join(" ");
+    }
+  } catch {
+    // Non-JSON error body — fall through to the status-based message.
+  }
+  return `Request failed (${response.status})`;
 }
 
 export interface HealthResponse {
