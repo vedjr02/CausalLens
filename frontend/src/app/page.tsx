@@ -1,132 +1,118 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  apiFetch,
-  type DbHealthResponse,
-  type HealthResponse,
-} from "@/lib/api";
+  DEFAULT_GENERATOR_STATE,
+  GeneratorPanel,
+  type GeneratorState,
+} from "@/components/experiment/GeneratorPanel";
+import { ResultsReport } from "@/components/experiment/ResultsReport";
+import { apiFetch, ApiError } from "@/lib/api";
+import type { SyntheticRunRequest, SyntheticRunResponse } from "@/lib/types";
 
-type Status = "checking" | "ok" | "down";
+function toRequest(state: GeneratorState): SyntheticRunRequest {
+  const isBinary = state.metricType === "binary";
 
-interface SystemState {
-  api: Status;
-  db: Status;
-  apiDetail: string;
-  dbDetail: string;
+  return {
+    config: {
+      metric_type: state.metricType,
+      n_per_group: state.nPerGroup,
+      // Percentages and percentage points are how people think about
+      // conversion rates; the engine works in raw proportions.
+      baseline_rate: isBinary ? state.baselineRatePct / 100 : null,
+      baseline_mean: isBinary ? null : state.baselineMean,
+      std_dev: isBinary ? null : state.stdDev,
+      true_effect: isBinary ? state.trueEffectPp / 100 : state.trueEffectAbsolute,
+      seed: state.seed,
+    },
+    alpha: state.alphaPct / 100,
+    alternative: "two-sided",
+    run_validation: true,
+    replications: state.replications,
+  };
 }
-
-const INITIAL: SystemState = {
-  api: "checking",
-  db: "checking",
-  apiDetail: "",
-  dbDetail: "",
-};
 
 export default function Home() {
-  const [state, setState] = useState<SystemState>(INITIAL);
+  const [state, setState] = useState<GeneratorState>(DEFAULT_GENERATOR_STATE);
+  const [result, setResult] = useState<SyntheticRunResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function check() {
-      let api: Status = "down";
-      let apiDetail = "Not reachable";
-      try {
-        const health = await apiFetch<HealthResponse>("/health");
-        api = health.status === "ok" ? "ok" : "down";
-        apiDetail = health.environment;
-      } catch (error) {
-        apiDetail = error instanceof Error ? error.message : "Not reachable";
-      }
-
-      let db: Status = "down";
-      let dbDetail = "Not reachable";
-      try {
-        const dbHealth = await apiFetch<DbHealthResponse>("/health/db");
-        db = dbHealth.connected ? "ok" : "down";
-        dbDetail = dbHealth.connected
-          ? (dbHealth.server?.split(" ").slice(0, 2).join(" ") ?? "Connected")
-          : (dbHealth.detail ?? "Not connected");
-      } catch (error) {
-        dbDetail = error instanceof Error ? error.message : "Not reachable";
-      }
-
-      if (!cancelled) setState({ api, db, apiDetail, dbDetail });
+  const run = useCallback(async (config: GeneratorState) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiFetch<SyntheticRunResponse>(
+        "/api/experiment/synthetic",
+        { method: "POST", body: JSON.stringify(toRequest(config)) },
+      );
+      setResult(response);
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError
+          ? caught.message
+          : "Something went wrong running the analysis.",
+      );
+      setResult(null);
+    } finally {
+      setLoading(false);
     }
-
-    void check();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
+  // Land on a worked example rather than an empty page — the null-effect case
+  // is the most instructive place to start.
+  useEffect(() => {
+    void run(DEFAULT_GENERATOR_STATE);
+  }, [run]);
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-report flex-col justify-center px-8 py-24">
-      <p className="text-xs uppercase tracking-[0.18em] text-ink-faint">
-        CausalLens
-      </p>
-
-      <h1 className="mt-5 max-w-2xl text-4xl font-medium leading-[1.15] tracking-tight">
-        Is that difference real, or did you get lucky?
-      </h1>
-
-      <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-ink-muted">
-        An experimentation and causal-impact tool. It runs the statistics
-        properly &mdash; then tells you what they mean in plain English.
-      </p>
-
-      <div className="mt-14 border-t border-rule pt-6">
-        <p className="text-xs uppercase tracking-[0.14em] text-ink-faint">
-          System status
+    <main className="mx-auto max-w-report px-8 py-16">
+      <header className="border-b border-rule pb-8">
+        <p className="text-xs uppercase tracking-[0.18em] text-ink-faint">
+          CausalLens
         </p>
-        <dl className="mt-4">
-          <StatusRow
-            label="Analysis engine"
-            status={state.api}
-            detail={state.apiDetail}
-          />
-          <StatusRow
-            label="Database"
-            status={state.db}
-            detail={state.dbDetail}
-          />
-        </dl>
+        <h1 className="mt-4 max-w-2xl text-[34px] font-medium leading-[1.15] tracking-tight">
+          Is that difference real, or did you get lucky?
+        </h1>
+        <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">
+          Set a true effect, simulate the experiment, and see whether the statistics
+          recover it. Every term on this page has a plain-English definition &mdash;
+          hover any underlined word.
+        </p>
+      </header>
+
+      <div className="mt-10">
+        <GeneratorPanel
+          state={state}
+          onChange={setState}
+          onRun={() => void run(state)}
+          loading={loading}
+        />
       </div>
 
-      <p className="mt-14 text-[13px] text-ink-faint">
-        Phase 0 &mdash; scaffold. Statistical modules land in the phases that
-        follow.
-      </p>
+      {error && (
+        <div
+          role="alert"
+          className="mt-8 rounded-lg border border-negative/25 bg-negative-soft px-6 py-5"
+        >
+          <p className="text-[13px] font-medium uppercase tracking-[0.12em] text-negative">
+            Could not run the analysis
+          </p>
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">{error}</p>
+        </div>
+      )}
+
+      {result && (
+        <div className="mt-14">
+          <ResultsReport result={result} />
+        </div>
+      )}
+
+      <footer className="mt-20 border-t border-rule pt-6 text-[13px] text-ink-faint">
+        Phase 1 &mdash; synthetic generator, two-proportion z-test, and Welch&rsquo;s
+        t-test. Power analysis, sequential testing, Bayesian inference, and causal
+        impact follow.
+      </footer>
     </main>
-  );
-}
-
-function StatusRow({
-  label,
-  status,
-  detail,
-}: {
-  label: string;
-  status: Status;
-  detail: string;
-}) {
-  const tone =
-    status === "ok"
-      ? "bg-positive"
-      : status === "down"
-        ? "bg-negative"
-        : "bg-ink-faint";
-
-  return (
-    <div className="flex items-baseline justify-between gap-6 border-b border-rule py-3 last:border-b-0">
-      <dt className="flex items-center gap-2.5 text-[15px]">
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${tone}`} />
-        {label}
-      </dt>
-      <dd className="tnum truncate text-right text-[13px] text-ink-muted">
-        {status === "checking" ? "Checking…" : detail}
-      </dd>
-    </div>
   );
 }

@@ -7,26 +7,47 @@
  * Warm paper, near-black ink, one restrained pine accent, and three
  * semantic signal colours reserved exclusively for verdicts.
  * No gradients, no glass, no decorative colour.
+ *
+ * Each colour is defined twice on purpose:
+ *   --x-rgb  space-separated channels, so Tailwind can apply opacity
+ *            modifiers like `bg-accent/50` (it injects an alpha into
+ *            `rgb(var(--x-rgb) / <alpha-value>)`; a hex string there
+ *            silently produces a transparent colour)
+ *   --x      a ready-to-use colour for plain CSS and for chart libraries
+ *            that take a colour string, such as Recharts
  */
 :root {
-  --paper: #faf9f7;
-  --surface: #ffffff;
-  --ink: #16181d;
-  --ink-muted: #5c6169;
-  --ink-faint: #8a8f98;
-  --rule: #e5e2dd;
-  --rule-strong: #d3cfc8;
+  --paper-rgb: 250 249 247;
+  --surface-rgb: 255 255 255;
+  --ink-rgb: 22 24 29;
+  --ink-muted-rgb: 92 97 105;
+  --ink-faint-rgb: 138 143 152;
+  --rule-rgb: 229 226 221;
+  --rule-strong-rgb: 211 207 200;
 
-  --accent: #1f4e46;
-  --accent-soft: #eef3f1;
+  --accent-rgb: 31 78 70;
+  --accent-soft-rgb: 238 243 241;
 
   /* Verdict semantics — never used decoratively. */
-  --signal-positive: #1f6f4a;
-  --signal-positive-soft: #edf5f0;
-  --signal-caution: #8a6314;
-  --signal-caution-soft: #f8f2e6;
-  --signal-negative: #9c3a2b;
-  --signal-negative-soft: #f8efed;
+  --signal-positive-rgb: 31 111 74;
+  --signal-positive-soft-rgb: 237 245 240;
+  --signal-caution-rgb: 138 99 20;
+  --signal-caution-soft-rgb: 248 242 230;
+  --signal-negative-rgb: 156 58 43;
+  --signal-negative-soft-rgb: 248 239 237;
+
+  --paper: rgb(var(--paper-rgb));
+  --surface: rgb(var(--surface-rgb));
+  --ink: rgb(var(--ink-rgb));
+  --ink-muted: rgb(var(--ink-muted-rgb));
+  --ink-faint: rgb(var(--ink-faint-rgb));
+  --rule: rgb(var(--rule-rgb));
+  --rule-strong: rgb(var(--rule-strong-rgb));
+  --accent: rgb(var(--accent-rgb));
+  --accent-soft: rgb(var(--accent-soft-rgb));
+  --signal-positive: rgb(var(--signal-positive-rgb));
+  --signal-caution: rgb(var(--signal-caution-rgb));
+  --signal-negative: rgb(var(--signal-negative-rgb));
 }
 
 html {

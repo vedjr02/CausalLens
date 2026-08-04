@@ -154,12 +154,23 @@ def simulate_rejection_rate(
         )
     else:
         label = "Statistical power"
+        misses = replications - rejections
+        if misses == 0:
+            tail = (
+                "It never missed once, so at this sample size an effect this large is "
+                "essentially impossible to overlook."
+            )
+        else:
+            tail = (
+                f"The other {misses:,} times ({1 - rate:.1%}) a real effect was missed, "
+                "purely because of sample noise — a false negative, not evidence of "
+                "no effect."
+            )
         explanation = (
             f"The true effect was set to {config.true_effect:g}, so a correct test should "
             f"detect it. Across {replications:,} simulated experiments the {test_label} "
             f"found it {rejections:,} times — an empirical power of {rate:.1%} "
-            f"(margin of error {low:.1%} to {high:.1%}). The other {1 - rate:.1%} of the "
-            "time a real effect was missed, purely because of sample noise."
+            f"(margin of error {low:.1%} to {high:.1%}). " + tail
         )
 
     return RejectionRateResult(

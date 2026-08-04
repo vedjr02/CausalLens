@@ -1,5 +1,13 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * Colours come from CSS variables holding space-separated RGB channels, so
+ * that opacity modifiers (`bg-accent/50`, `border-positive/25`) actually
+ * work. Pointing these at hex variables instead makes every such class
+ * render transparent, with no build error to warn you.
+ */
+const withAlpha = (variable: string) => `rgb(var(${variable}) / <alpha-value>)`;
+
 const config: Config = {
   content: [
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,32 +16,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        paper: "var(--paper)",
-        surface: "var(--surface)",
+        paper: withAlpha("--paper-rgb"),
+        surface: withAlpha("--surface-rgb"),
         ink: {
-          DEFAULT: "var(--ink)",
-          muted: "var(--ink-muted)",
-          faint: "var(--ink-faint)",
+          DEFAULT: withAlpha("--ink-rgb"),
+          muted: withAlpha("--ink-muted-rgb"),
+          faint: withAlpha("--ink-faint-rgb"),
         },
         rule: {
-          DEFAULT: "var(--rule)",
-          strong: "var(--rule-strong)",
+          DEFAULT: withAlpha("--rule-rgb"),
+          strong: withAlpha("--rule-strong-rgb"),
         },
         accent: {
-          DEFAULT: "var(--accent)",
-          soft: "var(--accent-soft)",
+          DEFAULT: withAlpha("--accent-rgb"),
+          soft: withAlpha("--accent-soft-rgb"),
         },
         positive: {
-          DEFAULT: "var(--signal-positive)",
-          soft: "var(--signal-positive-soft)",
+          DEFAULT: withAlpha("--signal-positive-rgb"),
+          soft: withAlpha("--signal-positive-soft-rgb"),
         },
         caution: {
-          DEFAULT: "var(--signal-caution)",
-          soft: "var(--signal-caution-soft)",
+          DEFAULT: withAlpha("--signal-caution-rgb"),
+          soft: withAlpha("--signal-caution-soft-rgb"),
         },
         negative: {
-          DEFAULT: "var(--signal-negative)",
-          soft: "var(--signal-negative-soft)",
+          DEFAULT: withAlpha("--signal-negative-rgb"),
+          soft: withAlpha("--signal-negative-soft-rgb"),
         },
       },
       fontFamily: {
